@@ -1,17 +1,15 @@
 import { useEffect, useState } from "react";
 import axios from "axios";
+import "./App.css";
+
+const API = "http://localhost:5001/api/users";
+const INITIAL_FORM = { firstName: "", lastName: "", dateOfBirth: "" };
 
 function App() {
   const [users, setUsers] = useState([]);
-  const [formData, setFormData] = useState({
-    firstName: "",
-    lastName: "",
-    dateOfBirth: ""
-  });
+  const [formData, setFormData] = useState(INITIAL_FORM);
+  const [editingId, setEditingId] = useState(null);
 
-  const API = "http://localhost:5001/api/users";
-
-  // Fetch users
   const fetchUsers = async () => {
     const res = await axios.get(API);
     setUsers(res.data);
@@ -21,23 +19,33 @@ function App() {
     fetchUsers();
   }, []);
 
-  // Handle input
+  const resetForm = () => {
+    setFormData(INITIAL_FORM);
+    setEditingId(null);
+  };
+
   const handleChange = (e) => {
+    setFormData({ ...formData, [e.target.name]: e.target.value });
+  };
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    editingId 
+      ? await axios.put(`${API}/${editingId}`, formData)
+      : await axios.post(API, formData);
+    fetchUsers();
+    resetForm();
+  };
+
+  const handleEdit = (user) => {
+    setEditingId(user._id);
     setFormData({
-      ...formData,
-      [e.target.name]: e.target.value
+      firstName: user.firstName,
+      lastName: user.lastName,
+      dateOfBirth: user.dateOfBirth.split('T')[0]
     });
   };
 
-  // Submit
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    await axios.post(API, formData);
-    fetchUsers();
-    setFormData({ firstName: "", lastName: "", dateOfBirth: "" });
-  };
-
-  // Delete
   const handleDelete = async (id) => {
     await axios.delete(`${API}/${id}`);
     fetchUsers();
@@ -75,7 +83,12 @@ function App() {
         />
         <br /><br />
 
-        <button type="submit">Add User</button>
+        <button type="submit">{editingId ? "Update User" : "Add User"}</button>
+        {editingId && (
+          <button type="button" onClick={resetForm} style={{ marginLeft: "10px" }}>
+            Cancel
+          </button>
+        )}
       </form>
 
       <hr />
@@ -88,7 +101,10 @@ function App() {
             {user.firstName} {user.lastName} -{" "}
             {new Date(user.dateOfBirth).toLocaleDateString()}
           </p>
-          <button onClick={() => handleDelete(user._id)}>Delete</button>
+          <button onClick={() => handleEdit(user)}>Edit</button>
+          <button onClick={() => handleDelete(user._id)} style={{ marginLeft: "10px" }}>
+            Delete
+          </button>
           <hr />
         </div>
       ))}
