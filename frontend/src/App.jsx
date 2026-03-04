@@ -15,7 +15,11 @@ function App() {
     setUsers(res.data);
   };
 
-  useEffect(() => {
+    useEffect(() => {
+    const fetchUsers = async () => {
+      const res = await axios.get(API);
+      setUsers(res.data);
+    };
     fetchUsers();
   }, []);
 
